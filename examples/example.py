@@ -29,9 +29,9 @@ for s, v in zip(stocks, values):
     print(f"  S_T = {s:>10.4f}   payoff = {v:>10.4f}")
 
 print("\n=== American vs European put ===")
-euro_put = qp.crr_price(S0=S0, K=K, r=r, sigma=sigma, T=T, N=200, q=q,
-                        is_call=False, american=False)
-amer_put = qp.crr_price(S0=S0, K=K, r=r, sigma=sigma, T=T, N=200, q=q,
-                        is_call=False, american=True)
+euro_put = qp.crr_price(
+    S0=S0, K=K, r=r, sigma=sigma, T=T, N=200, q=q, is_call=False, american=False
+)
+amer_put = qp.crr_price(S0=S0, K=K, r=r, sigma=sigma, T=T, N=200, q=q, is_call=False, american=True)
 print(f"European put: {euro_put:.6f}")
 print(f"American put: {amer_put:.6f}  (early-exercise premium: {amer_put - euro_put:.6f})")
