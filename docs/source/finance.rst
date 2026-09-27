@@ -1,6 +1,6 @@
-===============
-Finance and CRR
-===============
+==========================================
+Finance and CRR(Cox-Ross-Rubinstein) model
+==========================================
 
 This page explains the pricing model used by ``quantplus`` and the assumptions
 behind it. The package implements the Cox-Ross-Rubinstein (CRR) binomial tree
