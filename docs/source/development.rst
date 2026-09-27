@@ -78,7 +78,7 @@ When the pricing logic is modified, it is important to validate the change again
 known examples and the existing test suite.
 
 Contribution workflow
---------------------
+---------------------
 
 A typical contribution flow looks like this:
 

@@ -3,7 +3,7 @@ Release History
 ===============
 
 Initial release (2026-09-28)
----------------------------
+----------------------------
 
 This first documented release of ``quantplus`` introduces the package as a small,
 performance-oriented option-pricing library built around the Cox-Ross-Rubinstein

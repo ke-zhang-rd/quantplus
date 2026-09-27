@@ -129,7 +129,7 @@ American options are at least as valuable as their European counterparts because
 exercising early is a right, not an obligation.
 
 Black-Scholes benchmark
-----------------------
+-----------------------
 
 For closed-form comparison, use :func:`quantplus.black_scholes_price`.
 This implements the standard Black-Scholes-Merton formula and is often used to

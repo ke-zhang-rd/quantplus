@@ -68,7 +68,7 @@ American option valuation
     print(f"American put price: {american_put:.6f}")
 
 Comparing CRR and Black-Scholes
-------------------------------
+-------------------------------
 
 .. code-block:: python
 
@@ -102,7 +102,7 @@ Comparing CRR and Black-Scholes
     print(f"Black-Scholes price: {bs_value:.6f}")
 
 Inspecting the terminal tree
----------------------------
+----------------------------
 
 The ``crr_tree`` function is useful when you want to inspect the terminal node
 values or build custom visualizations.
