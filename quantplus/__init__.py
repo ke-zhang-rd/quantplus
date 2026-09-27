@@ -12,7 +12,7 @@ Example
 8.542142620861936
 """
 
-from ._crr_pricer import crr_price, black_scholes_price, crr_tree
+from ._crr_pricer import black_scholes_price, crr_price, crr_tree
 
 try:
     # Generated at build time by setuptools_scm from the nearest git tag.

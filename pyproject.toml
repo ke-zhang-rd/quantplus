@@ -73,3 +73,4 @@ target-version = ["py39", "py310", "py311", "py312"]
 [tool.isort]
 profile = "black"
 line_length = 100
+skip_glob = ["*.pyx", "*.pxd"]
