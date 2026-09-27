@@ -1,17 +1,14 @@
-import sys
 from os import path
-
-from setuptools import find_packages, setup
-
+from setuptools import setup, find_packages, Extension
+import sys
 import versioneer
+from Cython.Build import cythonize
+import numpy
 
 # NOTE: This file must remain Python 2 compatible for the foreseeable future,
 # to ensure that we error out properly for people with outdated setuptools
 # and/or pip.
-min_version = (
-    3,
-    1,
-)
+min_version = (3,10)
 if sys.version_info < min_version:
     error = """
 quantplus does not support Python {0}.{1}.
@@ -24,8 +21,7 @@ Upgrade pip like so:
 
 pip install --upgrade pip
 """.format(
-        *(sys.version_info[:2] + min_version)
-    )
+        *(sys.version_info[:2] + min_version))
     sys.exit(error)
 
 here = path.abspath(path.dirname(__file__))
@@ -56,11 +52,10 @@ setup(
     },
     include_package_data=True,
     package_data={
-        "quantplus": [
+        "quantplus": ["quantplus/include/crr.h", "quantplus/python/crr_wrapper.pyx"]
             # When adding files here, remember to update MANIFEST.in as well,
             # or else they will not be included in the distribution on PyPI!
             # 'path/to/data_file',
-        ]
     },
     install_requires=requirements,
     license="BSD (3-clause)",
@@ -69,4 +64,12 @@ setup(
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
     ],
+    include_dirs=[numpy.get_include()],
+    ext_modules=cythonize(Extension("quantplus.crr_wrapper",
+                                    sources=["quantplus/python/crr_wrapper.pyx"],
+                                    define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+                                    include_dirs=[numpy.get_include(), "quantplus/include", "quantplus"],
+                                    # Based on suggestion on
+                                    # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#compiling-with-the-cythonize-command
+                                    language="c++")),
 )

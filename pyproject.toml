@@ -18,3 +18,19 @@ exclude = '''
   | tests/data
 )/
 '''
+[build-system]
+requires = [
+    "setuptools",
+    "versioneer-518",
+    "wheel",
+    "cython>=0.25",
+    "numpy>=1.13.4;python_version!='3.5'",
+    "numpy>=1.13.4,<=1.15.2;python_version=='3.5'"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+skip = ["*-win32", "*-manylinux_i686", "*-musllinux_*", "pp*"]
+
+[tool.cibuildwheel.linux]
+before-all = "bash continuous_integration/scripts/pre_build.sh"

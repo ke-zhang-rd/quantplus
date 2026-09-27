@@ -1,59 +1,68 @@
-name: Build Documentation
+name: Docs on github page
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
+on: [push, pull_request]
+
 
 jobs:
-  build_docs:
-    # pull requests are a duplicate of a branch push if within the same repo.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-
-    runs-on: ubuntu-latest
+  publish-docs:
+    name: Build and publish docs
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11", "3.12", "3.13"]
       fail-fast: false
 
-    defaults:
-      run:
-        shell: bash -l {0}
-
     steps:
-      - name: Set env vars
+      - uses: actions/checkout@v2
+
+      - name: Set environment variable
         run: |
           export REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}  # just the repo, as opposed to org/repo
           echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
-
-      - name: Checkout the code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1000  # should be enough to reach the most recent tag
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install documentation-building requirements
+      - name: Dependencies C++
         run: |
-          # For reference: https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html.
-          set -vxeuo pipefail
-
-          # These packages are installed in the base environment but may be older
-          # versions. Explicitly upgrade them because they often create
-          # installation problems if out of date.
-          python -m pip install --upgrade pip setuptools numpy
-
-          pip install .
-          pip install -r requirements-dev.txt
-          pip list
-
-      - name: Build Docs
-        run: make -C docs/ html
-
-      - uses: actions/upload-artifact@v3
+          sudo apt-get update
+          sudo apt-get install git build-essential cmake libeigen3-dev valgrind
+          sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
+          ls /usr/include
+      - name: Set up Python ${{ matrix.python-version }} with conda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          name: ${{ env.REPOSITORY_NAME }}-docs
-          path: docs/build/html/
+          activate-environment: ${{ env.REPOSITORY_NAME }}-py${{ matrix.python-version }}
+          auto-update-conda: true
+          miniconda-version: "latest"
+          python-version: ${{ matrix.python-version }}
+          
+      - name: Install
+        shell: bash -l {0}
+        run: source continuous_integration/scripts/install.sh
+
+      - name: Build example code
+        shell: 'script --return --quiet --command "bash -l {0}"'
+        run: |
+            set -vxeo pipefail
+            conda env list
+            conda install pandoc
+            # Why pandoc need to be installed by conda
+            # https://stackoverflow.com/a/71585691/10642305
+            pip install -r requirements.txt
+            
+      - name: Build docs
+        shell: bash -l {0}
+        run: make -C docs html
+        
+      - name: Publish docs
+        # We pin to the SHA, not the tag, for security reasons.
+        # https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/security-hardening-for-github-actions#using-third-party-actions
+        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.python-version == '3.8' }}
+        if: ${{ github.repository_owner == 'ke-zhang-rd' && github.ref_name == 'main' && matrix.python-version == '3.13' }}
+        # uses: peaceiris/actions-gh-pages@bbdfb200618d235585ad98e965f4aafc39b4c501  # v3.7.3
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY}}
+          publish_branch: gh-pages
+          publish_dir: ./docs/build/html
+          external_repository: ke-zhang-rd/ke-zhang-rd.github.io
+          destination_dir: ${{ env.REPOSITORY_NAME }}
+          keep_files: true  # Keep old files.
+          force_orphan: false  # Keep git history.
