@@ -64,7 +64,7 @@ write_to = "quantplus/_version.py"
 
 [tool.pytest.ini_options]
 testpaths = ["quantplus/tests"]
-addopts = "-ra --cov=quantplus --cov-report=term-missing --cov-report=xml"
+addopts = "-ra"
 
 [tool.black]
 line-length = 100
