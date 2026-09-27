@@ -48,6 +48,7 @@ Documentation map
    installation
    usage
    architecture
+   finance
    examples
    api
    development
