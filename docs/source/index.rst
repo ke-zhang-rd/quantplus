@@ -47,9 +47,9 @@ Documentation map
 
    installation
    usage
-   architecture
-   finance
    examples
+   finance
+   architecture
    api
    development
    min_versions
