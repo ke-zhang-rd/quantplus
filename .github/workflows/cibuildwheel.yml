@@ -29,6 +29,15 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.19.2
+        env:
+          # 1. Skip all PyPy builds (pp*)
+          CIBW_SKIP: "pp*"
+
+          # 2. Build only standard 64-bit architectures (avoids 32-bit i686 compiler errors)
+          CIBW_ARCHS: "auto64"
+
+          # 3. (Optional) Increase verbosity if you want to see detailed compiler output
+          CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v4
         with:
