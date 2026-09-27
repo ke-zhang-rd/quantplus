@@ -1,6 +1,6 @@
-========
+===============
 Finance and CRR
-========
+===============
 
 This page explains the pricing model used by ``quantplus`` and the assumptions
 behind it. The package implements the Cox-Ross-Rubinstein (CRR) binomial tree
@@ -83,7 +83,7 @@ against the immediate exercise payoff and the larger of the two is chosen:
 This is exactly the logic implemented in the C++ core of the package.
 
 Assumptions of the CRR model
----------------------------
+----------------------------
 
 The CRR model is based on a set of simplifying assumptions:
 
@@ -99,7 +99,7 @@ These assumptions are standard in introductory option-pricing models and are
 well suited for educational and benchmark applications.
 
 European vs American options
----------------------------
+----------------------------
 
 The package distinguishes between:
 
@@ -127,7 +127,7 @@ without early exercise checks. For an American option, it compares continuation
 value against exercise value at each time step.
 
 Black-Scholes benchmark
-----------------------
+-----------------------
 
 The package also exposes ``black_scholes_price``, which gives the closed-form
 solution to the same problem under the continuous-time geometric Brownian motion
@@ -140,7 +140,7 @@ The CRR tree becomes more accurate as the number of steps increases because the
 lattice approximates the continuous diffusion more finely.
 
 How the code implements this
----------------------------
+----------------------------
 
 In the C++ core, the process is implemented as a nested loop over time steps and
 stock states. The numerical sequence is:
