@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +35,11 @@ jobs:
 
           # 2. Build only standard 64-bit architectures (avoids 32-bit i686 compiler errors)
           CIBW_ARCHS: "auto64"
+          
+          # 3 Builds both Intel and Apple Silicon wheels on the macos-latest runner: 
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
 
-          # 3. (Optional) Increase verbosity if you want to see detailed compiler output
+          # 4. (Optional) Increase verbosity if you want to see detailed compiler output
           CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v4
@@ -55,7 +58,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
+          name: python-sdist
           path: dist/*.tar.gz
 
   upload_pypi:
