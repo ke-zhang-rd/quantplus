@@ -1,16 +1,7 @@
-include AUTHORS.rst
-include CONTRIBUTING.rst
-include LICENSE
-include README.rst
-include requirements.txt
-
+include README.md LICENSE AUTHORS.rst CONTRIBUTING.rst
+include pyproject.toml setup.cfg
+recursive-include quantplus/csrc *.cpp *.h
+recursive-include quantplus *.pyx *.pxd
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
-
-recursive-include docs *.rst conf.py Makefile make.bat
-
-include versioneer.py
-include quantplus/_version.py
-
-# If including data files in the package, add them like:
-# include path/to/data_file
+global-exclude *.so *.dylib *.dll

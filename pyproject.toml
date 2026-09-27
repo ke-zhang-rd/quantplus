@@ -1,36 +1,75 @@
-[tool.black]
-line-length = 115
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-
-  # The following are specific to Black, you probably don't want those.
-  | blib2to3
-  | tests/data
-)/
-'''
 [build-system]
 requires = [
-    "setuptools",
-    "versioneer-518",
+    "setuptools>=66",
+    "setuptools_scm[toml]>=8",
+    "Cython>=3.0",
     "wheel",
-    "cython>=0.25",
-    "numpy>=1.13.4;python_version!='3.5'",
-    "numpy>=1.13.4,<=1.15.2;python_version=='3.5'"
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.cibuildwheel]
-skip = ["*-win32", "*-manylinux_i686", "*-musllinux_*", "pp*"]
+[project]
+name = "quantplus"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+description = "Cox-Ross-Rubinstein binomial option pricer (C++ core, Cython bindings)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Your Name", email = "you@example.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: C++",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
 
-[tool.cibuildwheel.linux]
-before-all = "bash continuous_integration/scripts/pre_build.sh"
+[project.urls]
+Homepage = "https://github.com/your-org/quantplus"
+Documentation = "https://your-org.github.io/quantplus/"
+Repository = "https://github.com/your-org/quantplus"
+Issues = "https://github.com/your-org/quantplus/issues"
+
+# ---------------------------------------------------------------------
+# All static metadata lives here (PEP 621) rather than split across a
+# separate setup.cfg -- mixing pyproject.toml's [project] table with a
+# setup.cfg [metadata] section for overlapping fields is unsupported by
+# setuptools and will error, so this file is the single source of truth.
+# setup.py's only remaining job is the imperative `ext_modules=` call
+# for the Cython/C++ extension, which can't be expressed declaratively.
+# ---------------------------------------------------------------------
+[tool.setuptools]
+packages = ["quantplus", "quantplus.tests"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = { file = ["requirements-dev.txt"] }
+
+# ---------------------------------------------------------------------
+# Versioning: setuptools_scm derives the package version directly from
+# git tags/commits (e.g. tag "v1.2.0" -> version "1.2.0"; an untagged
+# commit -> "1.2.1.dev3+g1a2b3c4"). No manual version string to keep in
+# sync, and no vendored versioning script to maintain (the alternative
+# some projects use, "versioneer", vendors a large generated file into
+# the repo -- setuptools_scm needs none of that, just this config block
+# plus a build-time dependency).
+# ---------------------------------------------------------------------
+[tool.setuptools_scm]
+write_to = "quantplus/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["quantplus/tests"]
+addopts = "-ra --cov=quantplus --cov-report=term-missing --cov-report=xml"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
