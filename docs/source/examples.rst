@@ -129,6 +129,28 @@ values or build custom visualizations.
 This pattern is especially useful when you are debugging the model or comparing
 values across a lattice.
 
+.. plot::
+    :caption: Terminal call and put payoffs at the stock-price nodes returned by ``crr_tree``.
+
+    import matplotlib.pyplot as plt
+    import quantplus as qp
+
+    parameters = dict(S0=100.0, K=100.0, r=0.05, sigma=0.20, T=1.0, N=8, q=0.01)
+    _, call_stocks, call_payoffs = qp.crr_tree(**parameters, is_call=True)
+    _, put_stocks, put_payoffs = qp.crr_tree(**parameters, is_call=False)
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.scatter(call_stocks, call_payoffs, color="#147d78", s=42, label="Call")
+    ax.scatter(put_stocks, put_payoffs, color="#c05a36", s=42, label="Put")
+    ax.axvline(parameters["K"], color="#667780", linestyle="--", linewidth=1,
+                  label="Strike")
+    ax.set_xlabel("Stock price at expiry")
+    ax.set_ylabel("Option payoff at expiry")
+    ax.set_title("Terminal payoffs on the CRR lattice")
+    ax.grid(alpha=0.25)
+    ax.legend(frameon=False)
+    fig.tight_layout()
+
 Running a small sensitivity check
 ---------------------------------
 

@@ -57,6 +57,47 @@ where:
 This probability is chosen so that the expected discounted stock return matches
 the risk-free rate under the risk-neutral measure.
 
+.. plot::
+   :caption: A four-step CRR stock-price lattice. Different paths recombine at shared nodes.
+
+   from math import exp, sqrt
+
+   import matplotlib.pyplot as plt
+
+   initial_price = 100.0
+   volatility = 0.25
+   expiry = 1.0
+   steps = 4
+   up = exp(volatility * sqrt(expiry / steps))
+   down = 1.0 / up
+
+   fig, ax = plt.subplots(figsize=(9, 4.5))
+   for level in range(steps):
+       for up_moves in range(level + 1):
+           x = level
+           y = 2 * up_moves - level
+           for next_up_moves in (up_moves, up_moves + 1):
+               next_x = level + 1
+               next_y = 2 * next_up_moves - next_x
+               ax.plot([x, next_x], [y, next_y], color="#91a4ad", linewidth=1.2, zorder=1)
+
+   for level in range(steps + 1):
+       for up_moves in range(level + 1):
+           y = 2 * up_moves - level
+           stock_price = initial_price * up**up_moves * down ** (level - up_moves)
+           ax.scatter(level, y, s=90, color="#147d78", edgecolor="white", zorder=2)
+           ax.annotate(f"{stock_price:.0f}", (level, y), xytext=(0, 10),
+                       textcoords="offset points", ha="center", fontsize=8)
+
+   ax.set_xticks(range(steps + 1), [f"Step {step}" for step in range(steps + 1)])
+   ax.set_ylabel("Up/down state")
+   ax.set_title("Recombining CRR stock-price lattice")
+   ax.set_ylim(-steps - 0.8, steps + 0.8)
+   ax.grid(axis="x", alpha=0.2)
+   ax.spines[["top", "right", "left"]].set_visible(False)
+   ax.tick_params(axis="y", left=False, labelleft=False)
+   fig.tight_layout()
+
 Backward induction
 ------------------
 
@@ -138,6 +179,40 @@ model. This is valuable for two reasons:
 
 The CRR tree becomes more accurate as the number of steps increases because the
 lattice approximates the continuous diffusion more finely.
+
+.. plot::
+   :caption: European call prices from the CRR tree approach the Black-Scholes benchmark as the number of steps increases.
+
+   import matplotlib.pyplot as plt
+   import quantplus as qp
+
+   spot = 100.0
+   strike = 100.0
+   rate = 0.05
+   volatility = 0.20
+   expiry = 1.0
+   dividend_yield = 0.01
+   step_counts = [5, 10, 20, 40, 80, 160, 320]
+   crr_prices = [
+       qp.crr_price(spot, strike, rate, volatility, expiry, count,
+                    q=dividend_yield, is_call=True)
+       for count in step_counts
+   ]
+   benchmark = qp.black_scholes_price(
+       spot, strike, rate, volatility, expiry, q=dividend_yield, is_call=True
+   )
+
+   fig, ax = plt.subplots(figsize=(8, 4.5))
+   ax.plot(step_counts, crr_prices, marker="o", color="#147d78", label="CRR")
+   ax.axhline(benchmark, color="#c05a36", linestyle="--", label="Black-Scholes")
+   ax.set_xscale("log", base=2)
+   ax.set_xticks(step_counts, [str(count) for count in step_counts])
+   ax.set_xlabel("Number of CRR steps")
+   ax.set_ylabel("European call price")
+   ax.set_title("CRR convergence to Black-Scholes")
+   ax.grid(alpha=0.25)
+   ax.legend(frameon=False)
+   fig.tight_layout()
 
 How the code implements this
 ----------------------------
