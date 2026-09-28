@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRR tree with expiry thresholds</title>
+<style>
+  :root { --fg:#222; --bg:#fff; --muted:#777; --hi:#d62728; --lo:#2ca02c; --node:#1f77b4; --dead:#cfcfcf; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg:#e6e6e6; --bg:#1b1b1b; --muted:#999; --dead:#4a4a4a; --node:#5aa9e6; }
+  }
+  html, body { margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #controls { display:flex; flex-wrap:wrap; gap:8px 14px; padding:8px 10px; align-items:center; }
+  #controls label { display:flex; gap:4px; align-items:center; color:var(--muted); font-size:12px; }
+  #controls input, #controls select { width:64px; padding:2px 4px; font:inherit;
+    background:var(--bg); color:var(--fg); border:1px solid var(--muted); border-radius:3px; }
+  #controls select { width:auto; }
+  #status { padding:2px 10px 6px; font-size:13px; }
+  #status b { font-variant-numeric:tabular-nums; }
+  #wrap { position:relative; width:100%; height:calc(100vh - 118px); min-height:320px; }
+  canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+  #hint { padding:0 10px 8px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div id="controls">
+  <label>S0 <input id="S0" type="number" value="225" step="1"></label>
+  <label>K <input id="K" type="number" value="240" step="1"></label>
+  <label>r <input id="r" type="number" value="0.0425" step="0.005"></label>
+  <label>sigma <input id="sigma" type="number" value="0.35" step="0.05"></label>
+  <label>T (days) <input id="Tdays" type="number" value="55" step="5"></label>
+  <label>N <input id="N" type="number" value="30" min="2" max="80" step="1"></label>
+  <label>type <select id="type"><option value="call">call</option><option value="put">put</option></select></label>
+  <label>style <select id="style"><option value="american">American</option><option value="european">European</option></select></label>
+</div>
+<div id="status"></div>
+<div id="wrap"><canvas id="cv"></canvas></div>
+<div id="hint">Drag the red (upper) and green (lower) bars. Terminal nodes outside the band get zero probability; grey nodes can no longer reach the band.</div>
+
+<script>
+// PRICING-START
+function buildTree(p) {
+  const N = p.N, dt = p.T / N;
+  const u = Math.exp(p.sigma * Math.sqrt(dt)), d = 1 / u;
+  const S = [];
+  for (let i = 0; i <= N; i++) {
+    S.push([]);
+    for (let j = 0; j <= i; j++) S[i].push(p.S0 * Math.pow(u, i - j) * Math.pow(d, j));
+  }
+  return { S, u, d, dt };
+}
+
+function aliveNodes(S, N, upper, lower) {
+  const alive = [];
+  for (let i = 0; i <= N; i++) alive.push(new Array(i + 1).fill(false));
+  for (let j = 0; j <= N; j++) alive[N][j] = S[N][j] <= upper && S[N][j] >= lower;
+  for (let i = N - 1; i >= 0; i--)
+    for (let j = 0; j <= i; j++) alive[i][j] = alive[i + 1][j] || alive[i + 1][j + 1];
+  return alive;
+}
+
+// Same rule as crr() in test.py: dead terminal nodes are pruned; if one child
+// is pruned the surviving child gets all the probability.
+function price(p, tree, upper, lower) {
+  const N = p.N, S = tree.S;
+  const pu = (Math.exp(p.r * tree.dt) - tree.d) / (tree.u - tree.d), pd = 1 - pu;
+  const D = Math.exp(-p.r * tree.dt);
+  const alive = aliveNodes(S, N, upper, lower);
+  if (!alive[N].some(Boolean)) return { price: NaN, alive };
+  const ex = (s) => p.isCall ? Math.max(s - p.K, 0) : Math.max(p.K - s, 0);
+  let V = S[N].map(ex);
+  for (let i = N - 1; i >= 0; i--) {
+    const W = new Array(i + 1).fill(0);
+    for (let j = 0; j <= i; j++) {
+      const a = alive[i + 1][j], b = alive[i + 1][j + 1];
+      let cont;
+      if (a && b) cont = D * (pu * V[j] + pd * V[j + 1]);
+      else if (a) cont = D * V[j];
+      else if (b) cont = D * V[j + 1];
+      else { W[j] = 0; continue; }
+      W[j] = p.american ? Math.max(ex(S[i][j]), cont) : cont;
+    }
+    V = W;
+  }
+  return { price: V[0], alive };
+}
+// PRICING-END
+
+const $ = (id) => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+let params, tree, hi, lo, ymin, ymax, W, H, dpr;
+const M = { l: 56, r: 14, t: 10, b: 42 };
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function readParams() {
+  const N = Math.max(2, Math.min(80, Math.round(+$("N").value) || 30));
+  return { S0: +$("S0").value, K: +$("K").value, r: +$("r").value, sigma: +$("sigma").value,
+           T: (+$("Tdays").value) / 365, N, isCall: $("type").value === "call",
+           american: $("style").value === "american" };
+}
+
+function rebuild(resetBars) {
+  params = readParams();
+  tree = buildTree(params);
+  const last = tree.S[params.N];
+  ymin = last[last.length - 1]; ymax = last[0];
+  if (resetBars || hi === undefined) {
+    const w = 2 * params.sigma * Math.sqrt(params.T);
+    hi = Math.min(ymax, params.S0 * Math.exp(w));
+    lo = Math.max(ymin, params.S0 * Math.exp(-w));
+  } else { hi = Math.min(hi, ymax); lo = Math.max(lo, ymin); }
+  draw();
+}
+
+const xOf = (i) => M.l + (i / params.N) * (W - M.l - M.r);
+const yOf = (s) => M.t + (1 - (s - ymin) / (ymax - ymin)) * (H - M.t - M.b);
+const sOf = (y) => ymin + (1 - (y - M.t) / (H - M.t - M.b)) * (ymax - ymin);
+
+function draw() {
+  const N = params.N, S = tree.S;
+  const res = price(params, tree, hi, lo);
+  const full = price(params, tree, Infinity, -Infinity).price;
+  const kept = res.alive[N].filter(Boolean).length;
+  $("status").innerHTML = isNaN(res.price)
+    ? "No terminal node inside the band - widen it."
+    : `${params.american ? "American" : "European"} ${params.isCall ? "call" : "put"} price = <b>${res.price.toFixed(4)}</b>` +
+      ` &nbsp;(no bounds: ${full.toFixed(4)}) &nbsp;|&nbsp; terminal nodes kept: ${kept}/${N + 1}`;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = "12px system-ui, sans-serif";
+
+  // shaded excluded regions
+  ctx.fillStyle = css("--hi") + "18"; ctx.fillRect(M.l, M.t, W - M.l - M.r, yOf(hi) - M.t);
+  ctx.fillStyle = css("--lo") + "18"; ctx.fillRect(M.l, yOf(lo), W - M.l - M.r, H - M.b - yOf(lo));
+
+  // axes / ticks
+  ctx.strokeStyle = css("--muted"); ctx.fillStyle = css("--muted"); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(M.l, M.t); ctx.lineTo(M.l, H - M.b); ctx.lineTo(W - M.r, H - M.b); ctx.stroke();
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let k = 0; k <= 5; k++) { const s = ymin + (k / 5) * (ymax - ymin); ctx.fillText(s.toFixed(0), M.l - 6, yOf(s)); }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const step = Math.max(1, Math.ceil(N / 10));
+  for (let i = 0; i <= N; i += step) ctx.fillText(i, xOf(i), H - M.b + 6);
+  ctx.fillText("time step", (M.l + W - M.r) / 2, H - 18);
+
+  // strike line
+  if (params.K >= ymin && params.K <= ymax) {
+    ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(M.l, yOf(params.K)); ctx.lineTo(W - M.r, yOf(params.K)); ctx.stroke();
+    ctx.setLineDash([]); ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText("strike", M.l + 4, yOf(params.K) - 2);
+  }
+
+  // edges then nodes
+  const A = res.alive;
+  ctx.lineWidth = 0.8;
+  for (const pass of [false, true]) {
+    ctx.strokeStyle = pass ? css("--node") : css("--dead");
+    ctx.globalAlpha = pass ? 0.55 : 0.5;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) for (let j = 0; j <= i; j++) for (const cj of [j, j + 1]) {
+      if ((A[i][j] && A[i + 1][cj]) !== pass) continue;
+      ctx.moveTo(xOf(i), yOf(S[i][j])); ctx.lineTo(xOf(i + 1), yOf(S[i + 1][cj]));
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const rad = Math.max(1.5, Math.min(4, 120 / N));
+  for (const pass of [false, true]) {
+    ctx.fillStyle = pass ? css("--node") : css("--dead");
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) for (let j = 0; j <= i; j++) {
+      if (A[i][j] !== pass) continue;
+      ctx.moveTo(xOf(i) + rad, yOf(S[i][j])); ctx.arc(xOf(i), yOf(S[i][j]), rad, 0, 6.2832);
+    }
+    ctx.fill();
+  }
+
+  // draggable bars
+  for (const [val, col, name, above] of [[hi, css("--hi"), "S_upper", true], [lo, css("--lo"), "S_lower", false]]) {
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(M.l, yOf(val)); ctx.lineTo(W - M.r, yOf(val)); ctx.stroke();
+    ctx.textAlign = "right"; ctx.textBaseline = above ? "bottom" : "top"; ctx.font = "bold 12px system-ui, sans-serif";
+    const txt = `${name} = ${val.toFixed(2)}`, tw = ctx.measureText(txt).width;
+    const ty = yOf(val) + (above ? -3 : 3);
+    ctx.save(); ctx.fillStyle = css("--bg"); ctx.globalAlpha = 0.85;
+    ctx.fillRect(W - M.r - 8 - tw, above ? ty - 15 : ty, tw + 8, 15); ctx.restore();
+    ctx.fillText(txt, W - M.r - 4, ty);
+  }
+}
+
+// ---- pointer dragging (mouse + touch) ----
+let drag = null;
+function nearest(y) {
+  const dh = Math.abs(yOf(hi) - y), dl = Math.abs(yOf(lo) - y);
+  const best = dh <= dl ? "hi" : "lo";
+  return Math.min(dh, dl) < 12 ? best : null;
+}
+cv.addEventListener("pointerdown", (e) => {
+  const y = e.offsetY; drag = nearest(y);
+  if (drag) cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener("pointermove", (e) => {
+  if (!drag) { cv.style.cursor = nearest(e.offsetY) ? "ns-resize" : "default"; return; }
+  const s = Math.min(Math.max(sOf(e.offsetY), ymin), ymax);
+  if (drag === "hi") hi = Math.max(s, lo); else lo = Math.min(s, hi);
+  draw();
+});
+cv.addEventListener("pointerup", () => { drag = null; });
+cv.addEventListener("pointercancel", () => { drag = null; });
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  if (params) draw();
+}
+window.addEventListener("resize", resize);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => draw());
+for (const id of ["S0", "K", "r", "sigma", "Tdays", "N", "type", "style"])
+  $(id).addEventListener("change", () => rebuild(id !== "K" && id !== "type" && id !== "style" && id !== "r"));
+
+resize(); rebuild(true);
+</script>
+</body>
+</html>

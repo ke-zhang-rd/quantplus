@@ -10,6 +10,20 @@ The project is intentionally small and focused: pricing functions are exposed at
 the top level, the numerical implementation lives in the C++ core, and Python is
 used as the ergonomic interface for users and tests.
 
+Interactive: expiry thresholds
+------------------------------
+
+Drag the red and green bars to set the upper and lower stock-price
+thresholds at expiry.
+
+.. raw:: html
+
+   <iframe src="_static/crr_thresholds.html"
+           width="100%" height="640"
+           style="border:1px solid #ccc; border-radius:4px;"></iframe>
+
+
+
 Overview
 --------
 
