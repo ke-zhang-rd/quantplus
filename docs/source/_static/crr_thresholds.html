@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CRR tree with expiry thresholds</title>
 <style>
-  :root { --fg:#222; --bg:#fff; --muted:#777; --hi:#d62728; --lo:#2ca02c; --node:#1f77b4; --dead:#cfcfcf; }
-  @media (prefers-color-scheme: dark) {
-    :root { --fg:#e6e6e6; --bg:#1b1b1b; --muted:#999; --dead:#4a4a4a; --node:#5aa9e6; }
-  }
-  html, body { margin:0; background:var(--bg); color:var(--fg);
+  :root { color-scheme:light; --fg:#222; --bg:#ffffff; --muted:#777; --hi:#d62728; --lo:#2ca02c; --node:#1f77b4; --dead:#cfcfcf; }
+  html, body { margin:0; background:#ffffff; color:var(--fg);
     font:14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  #controls { display:flex; flex-wrap:wrap; gap:8px 14px; padding:8px 10px; align-items:center; }
+  #controls { display:flex; flex-wrap:wrap; gap:8px 10px; padding:8px 10px; align-items:center; }
   #controls label { display:flex; gap:4px; align-items:center; color:var(--muted); font-size:12px; }
-  #controls input, #controls select { width:64px; padding:2px 4px; font:inherit;
+  #controls input, #controls select { width:50px; padding:2px 4px; font:inherit;
     background:var(--bg); color:var(--fg); border:1px solid var(--muted); border-radius:3px; }
   #controls select { width:auto; }
+  #controls input[type=checkbox] { width:auto; }
+  #controls label.chk { color:var(--fg); font-size:13px; }
   #status { padding:2px 10px 6px; font-size:13px; }
   #status b { font-variant-numeric:tabular-nums; }
-  #wrap { position:relative; width:100%; height:calc(100vh - 118px); min-height:320px; }
+  body { display:flex; flex-direction:column; height:100vh; }
+  #wrap { position:relative; width:100%; flex:1 1 auto; min-height:320px; }
   canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
   #hint { padding:0 10px 8px; font-size:12px; color:var(--muted); }
 </style>
@@ -27,16 +27,17 @@
 <div id="controls">
   <label>S0 <input id="S0" type="number" value="225" step="1"></label>
   <label>K <input id="K" type="number" value="240" step="1"></label>
-  <label>r <input id="r" type="number" value="0.0425" step="0.005"></label>
+  <label>r <input id="r" style="width:62px" type="number" value="0.0425" step="0.005"></label>
   <label>sigma <input id="sigma" type="number" value="0.35" step="0.05"></label>
   <label>T (days) <input id="Tdays" type="number" value="55" step="5"></label>
   <label>N <input id="N" type="number" value="30" min="2" max="80" step="1"></label>
   <label>type <select id="type"><option value="call">call</option><option value="put">put</option></select></label>
   <label>style <select id="style"><option value="american">American</option><option value="european">European</option></select></label>
+  <label class="chk"><input id="every" type="checkbox"> every-step thresholds</label>
 </div>
 <div id="status"></div>
 <div id="wrap"><canvas id="cv"></canvas></div>
-<div id="hint">Drag the red (upper) and green (lower) bars. Terminal nodes outside the band get zero probability; grey nodes can no longer reach the band.</div>
+<div id="hint">Drag the red (upper) and green (lower) bars. Expiry only (default): terminal nodes outside the band get zero probability, and grey nodes can no longer reach the band. Every time step: a node outside the band at any step is also cut.</div>
 
 <script>
 // PRICING-START
@@ -51,28 +52,33 @@ function buildTree(p) {
   return { S, u, d, dt };
 }
 
-function aliveNodes(S, N, upper, lower) {
+function aliveNodes(S, N, upper, lower, every) {
   const alive = [];
   for (let i = 0; i <= N; i++) alive.push(new Array(i + 1).fill(false));
   for (let j = 0; j <= N; j++) alive[N][j] = S[N][j] <= upper && S[N][j] >= lower;
   for (let i = N - 1; i >= 0; i--)
-    for (let j = 0; j <= i; j++) alive[i][j] = alive[i + 1][j] || alive[i + 1][j + 1];
+    for (let j = 0; j <= i; j++) {
+      const reach = alive[i + 1][j] || alive[i + 1][j + 1];
+      alive[i][j] = reach && (!every || (S[i][j] <= upper && S[i][j] >= lower));
+    }
   return alive;
 }
 
-// Same rule as crr() in test.py: dead terminal nodes are pruned; if one child
-// is pruned the surviving child gets all the probability.
+// Same rule as crr() in test.py: dead nodes are pruned; if one child is
+// pruned the surviving child gets all the probability. p.every = apply the
+// thresholds at every time step instead of at expiry only.
 function price(p, tree, upper, lower) {
   const N = p.N, S = tree.S;
   const pu = (Math.exp(p.r * tree.dt) - tree.d) / (tree.u - tree.d), pd = 1 - pu;
   const D = Math.exp(-p.r * tree.dt);
-  const alive = aliveNodes(S, N, upper, lower);
-  if (!alive[N].some(Boolean)) return { price: NaN, alive };
+  const alive = aliveNodes(S, N, upper, lower, p.every);
+  if (!alive[0][0]) return { price: NaN, alive };
   const ex = (s) => p.isCall ? Math.max(s - p.K, 0) : Math.max(p.K - s, 0);
   let V = S[N].map(ex);
   for (let i = N - 1; i >= 0; i--) {
     const W = new Array(i + 1).fill(0);
     for (let j = 0; j <= i; j++) {
+      if (!alive[i][j]) { W[j] = 0; continue; }
       const a = alive[i + 1][j], b = alive[i + 1][j + 1];
       let cont;
       if (a && b) cont = D * (pu * V[j] + pd * V[j + 1]);
@@ -97,7 +103,7 @@ function readParams() {
   const N = Math.max(2, Math.min(80, Math.round(+$("N").value) || 30));
   return { S0: +$("S0").value, K: +$("K").value, r: +$("r").value, sigma: +$("sigma").value,
            T: (+$("Tdays").value) / 365, N, isCall: $("type").value === "call",
-           american: $("style").value === "american" };
+           american: $("style").value === "american", every: $("every").checked };
 }
 
 function rebuild(resetBars) {
@@ -123,9 +129,9 @@ function draw() {
   const full = price(params, tree, Infinity, -Infinity).price;
   const kept = res.alive[N].filter(Boolean).length;
   $("status").innerHTML = isNaN(res.price)
-    ? "No terminal node inside the band - widen it."
+    ? "No path survives inside the band - widen it."
     : `${params.american ? "American" : "European"} ${params.isCall ? "call" : "put"} price = <b>${res.price.toFixed(4)}</b>` +
-      ` &nbsp;(no bounds: ${full.toFixed(4)}) &nbsp;|&nbsp; terminal nodes kept: ${kept}/${N + 1}`;
+      ` &nbsp;(no bounds: ${full.toFixed(4)}) &nbsp;|&nbsp; thresholds: ${params.every ? "every step" : "expiry only"} &nbsp;|&nbsp; terminal nodes kept: ${kept}/${N + 1}`;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
@@ -217,9 +223,8 @@ function resize() {
   if (params) draw();
 }
 window.addEventListener("resize", resize);
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => draw());
-for (const id of ["S0", "K", "r", "sigma", "Tdays", "N", "type", "style"])
-  $(id).addEventListener("change", () => rebuild(id !== "K" && id !== "type" && id !== "style" && id !== "r"));
+for (const id of ["S0", "K", "r", "sigma", "Tdays", "N", "type", "style", "every"])
+  $(id).addEventListener("change", () => rebuild(["S0", "sigma", "Tdays", "N"].includes(id)));
 
 resize(); rebuild(true);
 </script>
