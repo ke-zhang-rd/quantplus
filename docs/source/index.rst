@@ -1,5 +1,5 @@
-quantplus Documentation
-=======================
+Introduction
+============
 
 ``quantplus`` is a compact numerical-finance package for option pricing.
 It implements the Cox-Ross-Rubinstein (CRR) binomial tree model, provides a
