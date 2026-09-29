@@ -10,12 +10,7 @@ quantplus
         :target: https://pypi.python.org/pypi/quantplus
 
 
-Python package for doing science.
+Python package wrapping a C++ implementation of the Cox-Ross-Rubinstein (CRR) with
+probability truncation as mentioned in the `Cass Sunstein paper <https://chicagounbound.uchicago.edu/cgi/viewcontent.cgi?article=1384&context=law_and_economics>`_
 
-* Free software: 3-clause BSD license
-* Documentation: (COMING SOON!) https://ke-zhang-rd.github.io/quantplus.
-
-Features
---------
-
-* TODO
+* Documentation: https://ke-zhang-rd.github.io/quantplus.
