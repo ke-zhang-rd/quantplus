@@ -26,9 +26,10 @@ extern "C" {
 
 // Cox-Ross-Rubinstein binomial price.
 // isCall: 1 = call, 0 = put. american: 1 = allow early exercise, 0 = European.
-// Returns the option price, or NaN if the inputs are invalid (e.g. T<=0, N<=0).
+// Returns NaN for invalid inputs or when no terminal node survives the bounds.
 double crr_price(double S0, double K, double r, double q, double sigma,
-                  double T, int N, int isCall, int american) {
+                  double T, int N, int isCall, int american,
+                  double S_upper, double S_lower, int everyStep) {
     if (N <= 0 || T <= 0.0 || sigma < 0.0) {
         return std::nan("");
     }
@@ -41,23 +42,49 @@ double crr_price(double S0, double K, double r, double q, double sigma,
     const double qn   = 1.0 - p;
 
     std::vector<double> value(N + 1);
+    std::vector<unsigned char> alive(N + 1, 0);
     for (int j = 0; j <= N; ++j) {
         double ST = S0 * std::pow(u, j) * std::pow(d, N - j);
-        value[j] = isCall ? std::max(ST - K, 0.0) : std::max(K - ST, 0.0);
+        alive[j] = S_lower <= ST && ST <= S_upper;
+        value[j] = alive[j]
+            ? (isCall ? std::max(ST - K, 0.0) : std::max(K - ST, 0.0))
+            : 0.0;
     }
 
     for (int i = N - 1; i >= 0; --i) {
+        std::vector<unsigned char> currentAlive(i + 1, 0);
         for (int j = 0; j <= i; ++j) {
-            double continuation = disc * (p * value[j + 1] + qn * value[j]);
+            const double ST = S0 * std::pow(u, j) * std::pow(d, i - j);
+            const bool upAlive = alive[j + 1] != 0;
+            const bool downAlive = alive[j] != 0;
+            const bool inBand = S_lower <= ST && ST <= S_upper;
+            const bool nodeAlive = (upAlive || downAlive) && (!everyStep || inBand);
+            currentAlive[j] = nodeAlive;
+            if (!nodeAlive) {
+                value[j] = 0.0;
+                continue;
+            }
+
+            double continuation;
+            if (upAlive && downAlive) {
+                continuation = disc * (p * value[j + 1] + qn * value[j]);
+            } else if (upAlive) {
+                continuation = disc * value[j + 1];
+            } else {
+                continuation = disc * value[j];
+            }
             if (american) {
-                double ST = S0 * std::pow(u, j) * std::pow(d, i - j);
-                double exerciseValue = isCall ? std::max(ST - K, 0.0)
-                                               : std::max(K - ST, 0.0);
+                const double exerciseValue = isCall ? std::max(ST - K, 0.0)
+                                                     : std::max(K - ST, 0.0);
                 value[j] = std::max(continuation, exerciseValue);
             } else {
                 value[j] = continuation;
             }
         }
+        alive.swap(currentAlive);
+    }
+    if (!alive[0]) {
+        return std::nan("");
     }
     return value[0];
 }

@@ -80,6 +80,45 @@ class TestCRRPrice:
             qp.crr_price(S0=S0, K=K, r=R, sigma=-0.1, T=T, N=10)
 
 
+class TestThresholdedCRRPrice:
+    def test_matches_reference_for_expiry_and_every_step_thresholds(self):
+        args = (225.0, 240.0, 0.0425, 0.35, 55 / 365, 30)
+        expiry_only = qp.crr_price(
+            *args, american=True, S_upper=300.0, S_lower=170.0
+        )
+        every_step = qp.crr_price(
+            *args, american=True, S_upper=300.0, S_lower=170.0, every_step=True
+        )
+
+        assert expiry_only == pytest.approx(6.996290521975292)
+        assert every_step == pytest.approx(6.983727433492863)
+
+    def test_raises_when_bounds_are_reversed(self):
+        with pytest.raises(ValueError, match="S_lower"):
+            qp.crr_price(S0=S0, K=K, r=R, sigma=SIGMA, T=T, N=20,
+                         S_upper=100.0, S_lower=200.0)
+
+    def test_raises_when_no_terminal_node_survives(self):
+        with pytest.raises(ValueError, match="No path survives"):
+            qp.crr_price(S0=S0, K=K, r=R, sigma=SIGMA, T=T, N=20,
+                         S_lower=100_000.0)
+
+
+class TestCRRPlot:
+    def test_builds_interactive_tree_without_showing_window(self):
+        pytest.importorskip("matplotlib")
+        import matplotlib.pyplot as plt
+
+        fig, ax = qp.plot_crr_tree(
+            S0=S0, K=K, r=R, sigma=SIGMA, T=T, N=8, show=False
+        )
+        try:
+            assert len(ax.collections) == 2
+            assert "thresholds: expiry only" in ax.get_title()
+        finally:
+            plt.close(fig)
+
+
 class TestCRRTree:
     def test_terminal_nodes_length_matches_n_plus_one(self):
         _, stocks, values = qp.crr_tree(S0=S0, K=K, r=R, sigma=SIGMA, T=T, N=5, q=Q)

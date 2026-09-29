@@ -247,3 +247,4 @@ The CRR model is especially useful for:
 It is not a complete market model for all exotic derivatives, but it is a clean,
 transparent framework for vanilla options and for understanding how discrete-time
 pricing works in practice.
+

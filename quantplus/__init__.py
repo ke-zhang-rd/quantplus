@@ -13,6 +13,7 @@ Example
 """
 
 from ._crr_pricer import black_scholes_price, crr_price, crr_tree
+from .plotting import plot_crr_tree
 
 try:
     # Generated at build time by setuptools_scm from the nearest git tag.
@@ -21,4 +22,4 @@ try:
 except ImportError:  # pragma: no cover - only hit in an unbuilt source tree
     __version__ = "0+unknown"
 
-__all__ = ["crr_price", "black_scholes_price", "crr_tree", "__version__"]
+__all__ = ["crr_price", "black_scholes_price", "crr_tree", "plot_crr_tree", "__version__"]

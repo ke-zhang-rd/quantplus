@@ -10,7 +10,8 @@
 extern "C" {
 
 double crr_price(double S0, double K, double r, double q, double sigma,
-                  double T, int N, int isCall, int american);
+                  double T, int N, int isCall, int american,
+                  double S_upper, double S_lower, int everyStep);
 
 double black_scholes_price(double S0, double K, double r, double q,
                             double sigma, double T, int isCall);

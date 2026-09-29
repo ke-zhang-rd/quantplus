@@ -11,6 +11,6 @@ quantplus
 
 
 Python package wrapping a C++ implementation of the Cox-Ross-Rubinstein (CRR) with
-probability truncation as mentioned in the `Cass Sunstein paper <https://chicagounbound.uchicago.edu/cgi/viewcontent.cgi?article=1384&context=law_and_economics>`_
+probability truncation as mentioned in the `Cass Sunstein paper <https://chicagounbound.uchicago.edu/cgi/viewcontent.cgi?article=1384&context=law_and_economics>`_.
 
-* Documentation: https://ke-zhang-rd.github.io/quantplus.
+Documentation: https://ke-zhang-rd.github.io/quantplus.
