@@ -6,6 +6,11 @@ It implements the Cox-Ross-Rubinstein (CRR) binomial tree model, provides a
 closed-form Black-Scholes benchmark, and exposes the pricing logic to Python via
 Cython bindings around a native C++ core.
 
+What makes this package different from other other Cox-Ross-Rubinstein (CRR) is that
+it add probability truncation to binomial tree. User could turn on or off this feature
+in UI.
+
+
 The project is intentionally small and focused: pricing functions are exposed at
 the top level, the numerical implementation lives in the C++ core, and Python is
 used as the ergonomic interface for users and tests.
