@@ -1,24 +1,19 @@
 Introduction
 ============
 
-``quantplus`` is a compact numerical-finance package for option pricing.
-It implements the Cox-Ross-Rubinstein (CRR) binomial tree model, provides a
-closed-form Black-Scholes benchmark, and exposes the pricing logic to Python via
-Cython bindings around a native C++ core.
 
-What makes this package different from other other Cox-Ross-Rubinstein (CRR) is that
-it add probability truncation to binomial tree. Probability truncation restricts the
-distribution bounds of an event of variable, which is stock price in this case. The
+Python package wrapping a C++ implementation of the Cox-Ross-Rubinstein (CRR) with
+probability truncation as mentioned in the `Cass Sunstein paper <https://chicagounbound.uchicago.edu/cgi/viewcontent.cgi?article=1384&context=law_and_economics>`_
+
+
+Probability truncation restricts the distribution bounds of an event of variable, which is stock price in this case. The
 truncation is done by setting upper and lower thresholds for the stock price at expiry
-or entire tree. User can choose to turn on or off this feature.
+or entire tree.
 
+Source code could be found `here <https://github.com/ke-zhang-rd/quantplus>`_.
 
-The project is intentionally small and focused: pricing functions are exposed at
-the top level, the numerical implementation lives in the C++ core, and Python is
-used as the ergonomic interface for users and tests.
-
-Interactive: expiry thresholds
-------------------------------
+Interactive pricing
+-------------------
 
 Drag the red and green bars to set the upper and lower stock-price
 thresholds at expiry.
