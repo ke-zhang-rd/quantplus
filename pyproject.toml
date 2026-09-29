@@ -28,10 +28,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/quantplus"
-Documentation = "https://your-org.github.io/quantplus/"
-Repository = "https://github.com/your-org/quantplus"
-Issues = "https://github.com/your-org/quantplus/issues"
+Homepage = "https://github.com/ke-zhang-rd/quantplus"
+Documentation = "https://ke-zhang-rd.github.io/quantplus/"
+Repository = "https://github.com/ke-zhang-rd/quantplus"
+Issues = "https://github.com/ke-zhang-rd/quantplus/issues"
 
 # ---------------------------------------------------------------------
 # All static metadata lives here (PEP 621) rather than split across a
