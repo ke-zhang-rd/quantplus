@@ -35,3 +35,24 @@ euro_put = qp.crr_price(
 amer_put = qp.crr_price(S0=S0, K=K, r=r, sigma=sigma, T=T, N=200, q=q, is_call=False, american=True)
 print(f"European put: {euro_put:.6f}")
 print(f"American put: {amer_put:.6f}  (early-exercise premium: {amer_put - euro_put:.6f})")
+
+print("\n=== Stock-price threshold pruning ===")
+thresholds = {"S_upper": 300.0, "S_lower": 170.0}
+tree_steps = 30
+expiry_only = qp.crr_price(
+    S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q,
+    american=True, **thresholds,
+)
+every_step = qp.crr_price(
+    S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q,
+    american=True, every_step=True, **thresholds,
+)
+print(f"American call, no bounds: {qp.crr_price(S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q, american=True):.6f}")
+print(f"Thresholds at expiry only: {expiry_only:.6f}")
+print(f"Thresholds every step:     {every_step:.6f}")
+
+print("\nOpening interactive CRR tree; drag the threshold lines or toggle every-step pruning.")
+qp.plot_crr_tree(
+    S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q,
+    american=True, every_step=False, **thresholds,
+)
