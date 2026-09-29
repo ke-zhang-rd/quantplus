@@ -7,8 +7,10 @@ closed-form Black-Scholes benchmark, and exposes the pricing logic to Python via
 Cython bindings around a native C++ core.
 
 What makes this package different from other other Cox-Ross-Rubinstein (CRR) is that
-it add probability truncation to binomial tree. User could turn on or off this feature
-in UI.
+it add probability truncation to binomial tree. Probability truncation restricts the
+distribution bounds of an event of variable, which is stock price in this case. The
+truncation is done by setting upper and lower thresholds for the stock price at expiry
+or entire tree. User can choose to turn on or off this feature.
 
 
 The project is intentionally small and focused: pricing functions are exposed at
