@@ -47,7 +47,10 @@ every_step = qp.crr_price(
     S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q,
     american=True, every_step=True, **thresholds,
 )
-print(f"American call, no bounds: {qp.crr_price(S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q, american=True):.6f}")
+unbounded_call = qp.crr_price(
+    S0=S0, K=K, r=r, sigma=sigma, T=T, N=tree_steps, q=q, american=True
+)
+print(f"American call, no bounds: {unbounded_call:.6f}")
 print(f"Thresholds at expiry only: {expiry_only:.6f}")
 print(f"Thresholds every step:     {every_step:.6f}")
 
