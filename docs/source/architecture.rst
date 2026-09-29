@@ -15,6 +15,7 @@ High-level layout
     quantplus/
     ├── __init__.py              # public exports
     ├── _crr_pricer.pyx          # Cython bridge to native C++
+    ├── plotting.py              # interactive Matplotlib tree plot
     ├── csrc/
     │   ├── crr_core.cpp         # CRR and Black-Scholes math
     │   └── crr_core.h           # C interface declarations
@@ -30,6 +31,7 @@ and re-exports the functions that are intended for normal use:
 - ``crr_price``
 - ``black_scholes_price``
 - ``crr_tree``
+- ``plot_crr_tree``
 
 This makes the API easy to discover and keeps the import path simple:
 
@@ -49,6 +51,7 @@ Pythonic API.
 This is where the package handles several concerns:
 
 - argument validation
+- threshold validation and conversion of unbounded sides to infinities
 - conversion from Python values to native types
 - calling the C++ implementation
 - packaging the result back into native Python objects
@@ -64,11 +67,21 @@ The actual model logic is implemented in ``quantplus/csrc/crr_core.cpp``.
 It exposes plain C-linkage functions through ``crr_core.h``. The functions are:
 
 - ``crr_price``
+- bounded CRR backward induction with expiry-only or every-step pruning
 - ``black_scholes_price``
 - ``crr_price_with_terminal_nodes``
 
 These functions are defined using a simple C ABI so Cython can call them without
 relying on C++ name mangling or class-based object models.
+
+Interactive plotting
+--------------------
+
+``quantplus/plotting.py`` builds CRR tree geometry in Python, determines which
+nodes can reach an allowed terminal node, and delegates each bounded price
+calculation to the native ``crr_price`` function. Matplotlib imports are local
+to ``plot_crr_tree``, so importing the pricing API does not initialize the
+plotting stack.
 
 This design matters because it keeps the compiled part:
 

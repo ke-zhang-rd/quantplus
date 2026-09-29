@@ -15,6 +15,8 @@ Included features
 - CRR option pricing for European and American options
 - Black-Scholes closed-form pricing for benchmarking
 - tree-output utilities for inspecting terminal stock and option states
+- optional stock-price threshold pruning at expiry or every tree step
+- an interactive tree plot with draggable thresholds and live repricing
 - Cython-based Python bindings around a native C++ implementation
 - regression tests covering correctness and convergence behavior
 
@@ -29,12 +31,12 @@ performance-critical computations.
 Future direction
 ~~~~~~~~~~~~~~~~
 
-The project can reasonably expand in several directions, including:
+Possible future additions include:
 
 - more option types and payoff structures
 - more advanced Greeks calculations
 - additional numerical benchmarks and validation examples
-- more documentation and usage examples for quantitative finance workflows
+- additional documentation and usage examples for quantitative finance workflows
 
 The current release is deliberately small and readable, making it a solid base for
 future extension without increasing conceptual complexity.

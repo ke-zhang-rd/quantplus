@@ -15,6 +15,7 @@ Python stack used by the project build. At a minimum, you need:
 - Python 3.9+
 - a C/C++ compiler available on your system
 - pip for installing dependencies and the package
+- Matplotlib to use the optional interactive ``plot_crr_tree`` helper
 
 On macOS, the Xcode command-line tools are typically required before building a
 compiled extension:
@@ -92,3 +93,6 @@ You can then call the public functions, for example:
 
 If you see a numerical output rather than an import error, the package has been
 built and is ready to use.
+
+Matplotlib is imported only when ``quantplus.plot_crr_tree`` is called. The
+pricing functions can be used without opening an interactive plotting window.

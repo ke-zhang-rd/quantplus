@@ -129,6 +129,65 @@ values or build custom visualizations.
 This pattern is especially useful when you are debugging the model or comparing
 values across a lattice.
 
+Pricing with stock-price thresholds
+-----------------------------------
+
+Use ``S_lower`` and ``S_upper`` to keep only paths that can reach an allowed
+terminal stock-price range. The defaults apply the band at expiry; setting
+``every_step=True`` also prunes intermediate nodes outside it.
+
+.. code-block:: python
+
+    import quantplus as qp
+
+    parameters = dict(
+        S0=100.0, K=100.0, r=0.05, sigma=0.20, T=1.0, N=200, q=0.01
+    )
+    expiry_only = qp.crr_price(
+        **parameters,
+        is_call=True,
+        american=True,
+        S_lower=80.0,
+        S_upper=120.0,
+    )
+    every_step = qp.crr_price(
+        **parameters,
+        is_call=True,
+        american=True,
+        S_lower=80.0,
+        S_upper=120.0,
+        every_step=True,
+    )
+
+    print(f"Expiry-only thresholds: {expiry_only:.4f}")
+    print(f"Every-step thresholds:  {every_step:.4f}")
+
+Reversed bounds or bounds that leave no terminal path reachable from the root
+raise ``ValueError``. If a node has one surviving child, that child receives the
+remaining transition probability.
+
+Interactive threshold plot
+---------------------------
+
+The interactive helper displays the tree, grays out pruned nodes, and updates
+the bounded price as the threshold bars move. Its checkbox toggles every-step
+pruning.
+
+.. code-block:: python
+
+    fig, ax = qp.plot_crr_tree(
+        **parameters,
+        is_call=True,
+        american=True,
+        S_lower=80.0,
+        S_upper=120.0,
+        every_step=False,
+    )
+
+``plot_crr_tree`` returns a Matplotlib ``(figure, axes)`` pair. Use
+``show=False`` to create the plot without calling ``plt.show()``. Matplotlib is
+loaded lazily by the plotting function.
+
 .. plot::
     :caption: Terminal call and put payoffs at the stock-price nodes returned by ``crr_tree``.
 

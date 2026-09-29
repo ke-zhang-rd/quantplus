@@ -12,6 +12,7 @@ The package is intentionally small and exposes a few top-level functions:
 - :func:`quantplus.crr_price` for CRR option pricing
 - :func:`quantplus.black_scholes_price` for the benchmark formula
 - :func:`quantplus.crr_tree` for examining terminal stock prices and payoffs
+- :func:`quantplus.plot_crr_tree` for an interactive thresholded tree view
 
 Importing the package
 ---------------------
@@ -32,6 +33,7 @@ The source tree is organized as follows:
     quantplus/
     ├── __init__.py
     ├── _crr_pricer.pyx
+    ├── plotting.py
     ├── csrc/
     │   ├── crr_core.cpp
     │   └── crr_core.h
@@ -43,6 +45,7 @@ A few important points:
 - ``quantplus/__init__.py`` re-exports the public Python functions.
 - ``quantplus/_crr_pricer.pyx`` is the Cython bridge between Python and native
   C++ code.
+- ``quantplus/plotting.py`` provides the optional interactive Matplotlib view.
 - ``quantplus/csrc/crr_core.cpp`` contains the numerical implementation for the
   CRR and Black-Scholes pricing logic.
 - ``quantplus/tests/test_quantplus.py`` contains regression and validation tests.
@@ -89,6 +92,43 @@ Parameter meaning
 
 The implementation validates common edge cases such as non-positive time to
 maturity, non-positive step counts, and negative volatility.
+
+Threshold-pruned pricing
+------------------------
+
+The CRR pricer can restrict the tree to an inclusive stock-price band. Bounds
+apply to expiry nodes by default. With ``every_step=True``, intermediate nodes
+outside the band are also pruned. Earlier nodes are considered alive only when
+they can reach an allowed terminal node (and, in every-step mode, are themselves
+inside the band).
+
+.. code-block:: python
+
+    bounded_call = qp.crr_price(
+        S0=100.0,
+        K=100.0,
+        r=0.05,
+        sigma=0.20,
+        T=1.0,
+        N=200,
+        q=0.01,
+        is_call=True,
+        american=True,
+        S_lower=80.0,
+        S_upper=120.0,
+        every_step=False,
+    )
+
+    every_step_call = qp.crr_price(
+        S0=100.0, K=100.0, r=0.05, sigma=0.20, T=1.0, N=200,
+        q=0.01, is_call=True, american=True,
+        S_lower=80.0, S_upper=120.0, every_step=True,
+    )
+
+When both child nodes survive, the usual risk-neutral probabilities are used.
+When only one child survives, it receives the remaining probability. Bounds that
+are reversed or leave no terminal node reachable from the root raise
+``ValueError``.
 
 European vs American options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -182,6 +222,34 @@ The call returns three items:
 - ``root``: the option value at the tree root
 - ``stocks``: the terminal stock prices at maturity
 - ``values``: the terminal option payoffs at maturity
+
+Interactive tree plot
+----------------------
+
+Use :func:`quantplus.plot_crr_tree` to visualize the lattice and adjust the
+thresholds interactively. The red and green bars set the upper and lower bounds;
+the checkbox switches between expiry-only and every-step filtering.
+
+.. code-block:: python
+
+    fig, ax = qp.plot_crr_tree(
+        S0=100.0,
+        K=100.0,
+        r=0.05,
+        sigma=0.20,
+        T=1.0,
+        N=30,
+        q=0.01,
+        is_call=True,
+        american=True,
+        S_lower=80.0,
+        S_upper=120.0,
+        show=True,
+    )
+
+The function returns the Matplotlib ``(figure, axes)`` pair. Set ``show=False``
+to construct the figure without starting the GUI event loop. Matplotlib is needed
+only when this plotting function is called.
 
 Example: put option pricing
 ---------------------------

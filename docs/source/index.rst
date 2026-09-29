@@ -2,21 +2,22 @@ Introduction
 ============
 
 
-Python package wrapping a C++ implementation of the Cox-Ross-Rubinstein (CRR) with
-probability truncation as mentioned in the `Cass Sunstein paper <https://chicagounbound.uchicago.edu/cgi/viewcontent.cgi?article=1384&context=law_and_economics>`_
+Python package wrapping a C++ implementation of the Cox-Ross-Rubinstein (CRR)
+binomial option-pricing model, with optional stock-price threshold pruning.
 
-
-Probability truncation restricts the distribution bounds of an event of variable, which is stock price in this case. The
-truncation is done by setting upper and lower thresholds for the stock price at expiry
-or entire tree.
+Set inclusive ``S_lower`` and ``S_upper`` bounds to restrict which stock-price
+nodes contribute to the valuation. By default, the bounds apply at expiry;
+``every_step=True`` also removes nodes outside the band at intermediate steps.
+When only one child survives, it receives the remaining transition probability.
 
 Source code could be found `here <https://github.com/ke-zhang-rd/quantplus>`_.
 
 Interactive pricing
 -------------------
 
-Drag the red and green bars to set the upper and lower stock-price
-thresholds at expiry.
+Drag the red and green bars to set the upper and lower stock-price thresholds.
+Use the controls to change the option inputs and choose whether thresholds apply
+only at expiry or at every time step.
 
 .. raw:: html
 
@@ -33,8 +34,10 @@ The package supports:
 
 - European and American option pricing
 - CRR lattice calculations with adjustable step counts
+- optional lower and upper stock-price thresholds, applied at expiry or every step
 - Black-Scholes pricing as a benchmark
 - access to terminal node information for inspection and plotting
+- an interactive CRR tree plot with draggable thresholds
 
 The public API is intentionally simple:
 
@@ -52,7 +55,11 @@ The public API is intentionally simple:
         q=0.01,
         is_call=True,
         american=False,
+        S_lower=80.0,
+        S_upper=120.0,
     )
+
+    # Set every_step=True to enforce the band at every time step.
 
 Documentation map
 -----------------

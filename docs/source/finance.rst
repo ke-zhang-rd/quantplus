@@ -123,6 +123,39 @@ against the immediate exercise payoff and the larger of the two is chosen:
 
 This is exactly the logic implemented in the C++ core of the package.
 
+Threshold pruning
+-----------------
+
+``crr_price`` can apply inclusive lower and upper bounds to the stock-price
+states. By default, only terminal nodes outside ``[S_lower, S_upper]`` are
+removed. Earlier nodes remain eligible only if at least one child can reach an
+allowed terminal node. With ``every_step=True``, each intermediate node must
+also lie inside the band.
+
+Backward induction follows the surviving branches. If both children survive,
+the usual risk-neutral expectation is used. If only one child survives, the
+remaining transition probability is assigned to it before discounting; a node
+with no surviving child has zero value. This is a thresholded lattice valuation
+and differs from an unfiltered CRR price. If the root cannot reach any allowed
+terminal node, ``crr_price`` raises ``ValueError``.
+
+.. code-block:: python
+
+    bounded_price = qp.crr_price(
+        S0=100.0,
+        K=100.0,
+        r=0.05,
+        sigma=0.20,
+        T=1.0,
+        N=200,
+        q=0.01,
+        is_call=True,
+        american=True,
+        S_lower=80.0,
+        S_upper=120.0,
+        every_step=True,
+    )
+
 Assumptions of the CRR model
 ----------------------------
 

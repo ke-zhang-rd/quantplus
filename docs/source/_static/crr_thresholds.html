@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRR tree with expiry thresholds</title>
+<title>CRR tree with stock-price thresholds</title>
 <style>
   :root { color-scheme:light; --fg:#222; --bg:#ffffff; --muted:#777; --hi:#d62728; --lo:#2ca02c; --node:#1f77b4; --dead:#cfcfcf; }
   html, body { margin:0; background:#ffffff; color:var(--fg);
@@ -28,6 +28,7 @@
   <label>S0 <input id="S0" type="number" value="225" step="1"></label>
   <label>K <input id="K" type="number" value="240" step="1"></label>
   <label>r <input id="r" style="width:62px" type="number" value="0.0425" step="0.005"></label>
+  <label>q <input id="q" style="width:62px" type="number" value="0.0045" step="0.005"></label>
   <label>sigma <input id="sigma" type="number" value="0.35" step="0.05"></label>
   <label>T (days) <input id="Tdays" type="number" value="55" step="5"></label>
   <label>N <input id="N" type="number" value="30" min="2" max="80" step="1"></label>
@@ -64,12 +65,12 @@ function aliveNodes(S, N, upper, lower, every) {
   return alive;
 }
 
-// Same rule as crr() in test.py: dead nodes are pruned; if one child is
-// pruned the surviving child gets all the probability. p.every = apply the
-// thresholds at every time step instead of at expiry only.
+// Match quantplus threshold pricing: dead nodes are pruned, and when one child
+// survives it receives the remaining probability. p.every controls whether
+// thresholds also apply to intermediate nodes.
 function price(p, tree, upper, lower) {
   const N = p.N, S = tree.S;
-  const pu = (Math.exp(p.r * tree.dt) - tree.d) / (tree.u - tree.d), pd = 1 - pu;
+  const pu = (Math.exp((p.r - p.q) * tree.dt) - tree.d) / (tree.u - tree.d), pd = 1 - pu;
   const D = Math.exp(-p.r * tree.dt);
   const alive = aliveNodes(S, N, upper, lower, p.every);
   if (!alive[0][0]) return { price: NaN, alive };
@@ -101,7 +102,8 @@ const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v
 
 function readParams() {
   const N = Math.max(2, Math.min(80, Math.round(+$("N").value) || 30));
-  return { S0: +$("S0").value, K: +$("K").value, r: +$("r").value, sigma: +$("sigma").value,
+  return { S0: +$("S0").value, K: +$("K").value, r: +$("r").value, q: +$("q").value,
+           sigma: +$("sigma").value,
            T: (+$("Tdays").value) / 365, N, isCall: $("type").value === "call",
            american: $("style").value === "american", every: $("every").checked };
 }
@@ -223,7 +225,7 @@ function resize() {
   if (params) draw();
 }
 window.addEventListener("resize", resize);
-for (const id of ["S0", "K", "r", "sigma", "Tdays", "N", "type", "style", "every"])
+for (const id of ["S0", "K", "r", "q", "sigma", "Tdays", "N", "type", "style", "every"])
   $(id).addEventListener("change", () => rebuild(["S0", "sigma", "Tdays", "N"].includes(id)));
 
 resize(); rebuild(true);
