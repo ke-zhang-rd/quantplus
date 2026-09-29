@@ -61,6 +61,7 @@ dev = { file = ["requirements-dev.txt"] }
 # ---------------------------------------------------------------------
 [tool.setuptools_scm]
 write_to = "quantplus/_version.py"
+local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
 testpaths = ["quantplus/tests"]
