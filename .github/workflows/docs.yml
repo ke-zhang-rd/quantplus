@@ -46,10 +46,15 @@ jobs:
             # Why pandoc need to be installed by conda
             # https://stackoverflow.com/a/71585691/10642305
             pip install -r requirements.txt
+            pip install mpld3
             
       - name: Build docs
         shell: bash -l {0}
         run: make -C docs html
+
+      - name: Generate mpld3 plot
+        shell: bash -l {0}
+        run: python docs/generate_mpld3_plot.py
         
       - name: Publish docs
         # We pin to the SHA, not the tag, for security reasons.

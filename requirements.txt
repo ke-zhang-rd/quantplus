@@ -8,7 +8,6 @@ ipython
 matplotlib
 numpy
 numpydoc
-nbsphinx
 pexpect
 pytest
 sphinx<=8.1.3

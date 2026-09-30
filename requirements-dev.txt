@@ -14,7 +14,7 @@ nbstripout
 # These are dependencies of various sphinx extensions for documentation.
 ipython
 matplotlib
+mpld3
 numpydoc
-nbsphinx
 sphinx-copybutton
 sphinx_rtd_theme

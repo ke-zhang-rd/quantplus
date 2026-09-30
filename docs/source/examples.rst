@@ -167,11 +167,12 @@ raise ``ValueError``. If a node has one surviving child, that child receives the
 remaining transition probability.
 
 Interactive threshold plot
----------------------------
+--------------------------
 
-The interactive helper displays the tree, grays out pruned nodes, and updates
-the bounded price as the threshold bars move. Its checkbox toggles every-step
-pruning.
+The plot below is exported from the Matplotlib figure with ``mpld3``. It is a
+standalone HTML file with browser-side pan and zoom. The Python drag callbacks
+and checkbox are not transferred by mpld3. To adjust the thresholds and
+reprice the tree, call ``plot_crr_tree`` in a live Matplotlib session.
 
 .. code-block:: python
 
@@ -188,40 +189,8 @@ pruning.
 ``show=False`` to create the plot without calling ``plt.show()``. Matplotlib is
 loaded lazily by the plotting function.
 
-.. plot::
-    :caption: Terminal call and put payoffs at the stock-price nodes returned by ``crr_tree``.
+.. raw:: html
 
-    import matplotlib.pyplot as plt
-    import quantplus as qp
-
-    parameters = dict(S0=100.0, K=100.0, r=0.05, sigma=0.20, T=1.0, N=8, q=0.01)
-    _, call_stocks, call_payoffs = qp.crr_tree(**parameters, is_call=True)
-    _, put_stocks, put_payoffs = qp.crr_tree(**parameters, is_call=False)
-
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.scatter(call_stocks, call_payoffs, color="#147d78", s=42, label="Call")
-    ax.scatter(put_stocks, put_payoffs, color="#c05a36", s=42, label="Put")
-    ax.axvline(parameters["K"], color="#667780", linestyle="--", linewidth=1,
-                  label="Strike")
-    ax.set_xlabel("Stock price at expiry")
-    ax.set_ylabel("Option payoff at expiry")
-    ax.set_title("Terminal payoffs on the CRR lattice")
-    ax.grid(alpha=0.25)
-    ax.legend(frameon=False)
-    fig.tight_layout()
-
-Running a small sensitivity check
----------------------------------
-
-.. code-block:: python
-
-    import quantplus as qp
-
-    params = dict(S0=100.0, K=100.0, r=0.05, T=1.0, N=200, q=0.01)
-
-    for sigma in [0.10, 0.20, 0.30, 0.40]:
-        price = qp.crr_price(sigma=sigma, is_call=True, **params)
-        print(f"sigma={sigma:.2f}, price={price:.6f}")
-
-As volatility increases, option prices generally increase for standard long
-positions, which is consistent with the intuition behind the model.
+    <iframe src="_static/crr_thresholds_mpld3.html"
+            title="mpld3 CRR threshold plot" width="100%" height="760"
+            loading="lazy" style="border: 1px solid #ccc;"></iframe>
